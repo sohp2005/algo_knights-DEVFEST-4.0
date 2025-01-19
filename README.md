@@ -19,7 +19,7 @@ In today’s fast-paced world, finding the right gift can be challenging. Our AI
 
 ### 🧠 Technology Stack
 
-- **Frontend**: Figma based HTML/CSS and JavaScript for an intuitive user interface.
+- **Frontend**: Figma based HTML/CSS for an intuitive user interface.
 - **Backend**: Python Flask for robust and scalable backend services.
 
 ---
