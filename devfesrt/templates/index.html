@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Recommender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #000;
+        }
+        .container {
+            background-color: #f3e5f5;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #8e24aa;
+        }
+        .question {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: none;
+        }
+        .question.active {
+            display: block;
+        }
+        .buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #d81b60;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ad1457;
+        }
+        #result, #address-form {
+            display: none;
+            margin-top: 20px;
+        }
+        #address-form input, #address-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f3e5f5;
+            color: #000;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e1bee7;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #8e24aa;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        #welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        #welcome input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="welcome" class="container">
+        <h1>Welcome to Gift Recommender</h1>
+        <p>Please enter your name to get started:</p>
+        <input type="text" id="username" placeholder="Your Name" required>
+        <button onclick="startApp()">Start</button>
+    </div>
+
+    <div id="app" class="container" style="display: none;">
+        <h1>Gift Recommender</h1>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div id="questions">
+            {% for question in questions %}
+            <div class="question" id="q{{loop.index}}">
+                <p>{{question}}</p>
+            </div>
+            {% endfor %}
+            <div class="buttons">
+                <button onclick="answer(false)">No</button>
+                <button onclick="answer(true)">Yes</button>
+            </div>
+        </div>
+
+        <div id="result">
+            <h2>Recommended Gift</h2>
+            <p id="gift-recommendation"></p>
+            <div class="buttons">
+                <button onclick="showSimilarGift()">No, show me something else</button>
+                <button onclick="showAddressForm()">Yes, I like it!</button>
+            </div>
+        </div>
+
+        <div id="address-form">
+            <h2>Delivery Information</h2>
+            <form onsubmit="submitAddress(event)">
+                <input type="text" placeholder="Full Name" required>
+                <input type="email" placeholder="Email" required>
+                <input type="tel" placeholder="Phone Number" required>
+                <textarea placeholder="Delivery Address" required rows="3"></textarea>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = 1;
+        const totalQuestions = {{questions|length}};
+        let answers = [];
+        let currentGift = null;
+        let similarGifts = null;
+
+        function startApp() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                alert(`Welcome, ${username}! Let's find the perfect gift for you.`);
+
+                // Show first question
+                document.getElementById('q1').classList.add('active');
+            } else {
+                alert('Please enter your name to proceed.');
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentQuestion - 1) / totalQuestions * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function answer(value) {
+            answers.push(value);
+            document.getElementById('q' + currentQuestion).classList.remove('active');
+            
+            if (currentQuestion < totalQuestions) {
+                currentQuestion++;
+                document.getElementById('q' + currentQuestion).classList.add('active');
+                updateProgress();
+            } else {
+                // Submit answers and get recommendation
+                fetch('/recommend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({answers: answers})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    currentGift = data.gift;
+                    similarGifts = data.similar;
+                    document.getElementById('gift-recommendation').textContent = 
+                        `We recommend: ${currentGift}`;
+                    document.getElementById('questions').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                });
+            }
+        }
+
+        function showSimilarGift() {
+            if (similarGifts && similarGifts.length > 0) {
+                const newGift = similarGifts.shift();
+                document.getElementById('gift-recommendation').textContent = 
+                    `How about this instead: ${newGift}`;
+                currentGift = newGift;
+            }
+        }
+
+        function showAddressForm() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('address-form').style.display = 'block';
+        }
+
+        function submitAddress(event) {
+            event.preventDefault();
+            alert('Thank you for using this app.');
+        }
+
+        updateProgress();
+    </script>
+</body>
+</html>
