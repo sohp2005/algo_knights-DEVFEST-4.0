@@ -1,4 +1,4 @@
-# devfest
+# DEVFEST 4.0 HACKATHON
 
 # 🎁 AI Gift Recommender
 
